@@ -80,14 +80,23 @@ def find_new_content(sources):
         except:
             print("Fetch of content from {!r} has failed".format(src))
 
+        content = None
         try:
-            content = src.fetch()
-
+            content = src.parse()
         except:
-            print(""
+            print("parsing of content from {!r} has failed".format(src))
+
+        if content:
+            #machine learing beep boop
+            relevant_content = [{'title':'This is a paper','authors':['James Joyce'], 'doi':'23452retdrwr'},
+                                {'title':'This is a paper','authors':['Ezra Pound', 'Ernest Hemingway'], 'doi':'werwe','url':'http://www.zombo.com'}]
+            return relevant_content
 
 #training suite
 def train(good_sources, bad sources):
+    pass
+
+def to_markdown(content):
     pass
 
 def main(argv):
@@ -97,6 +106,8 @@ def main(argv):
 
     sources = [ArXiv(topics=['cond-mat']), BibTex('some_file.bib')]
     new_content = find_new_content(sources)
+    #format new_content
+    to_markdown(new_content)
 
 
 

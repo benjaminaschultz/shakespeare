@@ -4,27 +4,28 @@ import minidom #or something
 #Class for interacting with the arXiv
 class arxiv(object):
 
-    def __init__(self):
-        pass
+    def __init__(self,topics=['cond-mat']):
+        self.topics=topics
 
-    def fetch(self,topics=['cond-mat']):
-        xml = open('.arxiv.xml')
-        for topic in topic:
+    def __repr(self)__:
+        return ' '.join(['arXiv:{}'.format(t) for t in self.topics()])
+
+    def fetch(self):
+        self.xml = ''
+        for topic in self.topics:
             if topic=='cond-mat':
-                ''''
+                ''' '
                 do stuff
                 this_xml = ask arxiv for info
-                xml.write(this_xml)
+                xml+=this_xml
                 '''
-        xml.close()
-        return 'arxiv.xml'
 
-    def parse(self, filename):
+    def parse(self):
         pass 
         '''
         articles = list()
-        for entry in filename:
-            a rticle = dict()
+        for entry in self.xml:
+            article = dict()
             for field in entry:
                  if field_name == 'title':
                     article['title'] = field_value
