@@ -5,7 +5,11 @@ Identify relevant scientific papers with simple machine learning techniques
 
 Installation
 ===========
-Copy shakespeare.py to your pythonpath.
+Copy shakespeare.py and content\_sources to your pythonpath.
+
+Depends on `distance` and `bibtexparser` packages, which can be installed via pip
+
+    pip install distance bibtexparser
 
 *Once we complete the script, we may consider putting most of the functionality into a library with a python API. Use CMake for an istaller*
 
