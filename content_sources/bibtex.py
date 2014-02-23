@@ -1,4 +1,6 @@
 import re
+import os
+from bibtexparser.bparser import BibTexParser
 
 #Parse Bibtex file and return dictionary
 class BibTex(object):
@@ -10,21 +12,18 @@ class BibTex(object):
         return 'BibTex File {} '.format(self.file)
 
     def fetch(self):
-        self.content = open(filename)
+        if not os.path.exists(self.filename):
+            raise Exception("Bibtex file {} does not exist".format(self.filename))
+        if not os.path.isfile(self.filename):
+            raise Exception("Bibtex file {} is not a file".format(self.filename))
 
     def parse(filename):
-        pass
-        '''
-        articles = list()
-        for entry in self.content:
-            article = dict()
-            for field in entry:
-                if field_name == 'title':
-                    article['title'] = field_value
-                if field_name == 'authoer':
-                    article['title'] = authors
-        .
-        .
-        .
+        articles= list()
+        with open(self.filename,'r') as bibfile:
+            entries = BibTexParser(bibfile).get_entry_list()
+            for entry in entries:
+                article=dict()
+                for kw in ['title','author','abstract','url']:
+                    article[kw]= entry[kw] if kw in entry else ''
+                articles.append(article)
         return articles
-        '''

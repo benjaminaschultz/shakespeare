@@ -16,19 +16,26 @@ class arxiv(object):
         query = 'query?search_query=cat:{}&start=0&max_results=100'.format(topic)
         self.xml = urllib2.urlopen(self.url_base + query).read()
 
+    # extract the relevant fields from the xml returned from our arXiv query
     def parse(self):
 
-        '''
         articles = list()
-        for entry in self.xml:
+        entries = parseString(self.xml).getElementsByTagNamea('entry')
+
+        for entry in entries:
             article = dict()
-            for field in entry:
-                 if field_name == 'title':
-                    article['title'] = field_value
-                if field_name == 'authoer':
-                    article['title'] = authors
-        .
-        .
-        .
+            article['abstract'] = entry.getElementsByTagName('summary')[0].toxml().replace('<summary>','').replace('</summary>','')
+
+            authors =list()
+            for author in  entry.getElementsByTagName('author'):
+                name = entry.getElementsByTagName('name')[0]
+                authors.append(author.toxml().replace('<name>','').replace('</name>',''))
+
+            article['authors']=authors
+
+            article['title'] = entry.getElementsByTagName('title')[0].toxml().replace('<title>','').replace('</title>','')
+            article['url'] = entry.getElementsByTagName('id')[0].toxml().replace('<id>','').replace('</id>','')
+
+            articles.append(article)
+
         return articles
-        '''

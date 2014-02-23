@@ -104,7 +104,7 @@ def main(argv):
     #add command line options for sources, output prefs, database of "good" keywords
     #use argparse
 
-    sources = [ArXiv(topics=['cond-mat']), BibTex('some_file.bib')]
+    sources = [ArXiv('cond-mat'), BibTex('some_file.bib')]
     new_content = find_new_content(sources)
     #format new_content
     to_markdown(new_content)
