@@ -1,27 +1,23 @@
-import minidom #or something
-
+from xml.dom.minidom  import parseString
+import urllib2
 
 #Class for interacting with the arXiv
 class arxiv(object):
 
-    def __init__(self,topics=['cond-mat']):
-        self.topics=topics
+    def __init__(self,topic='cond-mat'):
+        self.topic=topic
+        self.url_base = 'http://export.arxiv.org/api/'
 
     def __repr(self)__:
         return ' '.join(['arXiv:{}'.format(t) for t in self.topics()])
 
     def fetch(self):
         self.xml = ''
-        for topic in self.topics:
-            if topic=='cond-mat':
-                ''' '
-                do stuff
-                this_xml = ask arxiv for info
-                xml+=this_xml
-                '''
+        query = 'query?search_query=cat:{}&start=0&max_results=100'.format(topic)
+        self.xml = urllib2.urlopen(self.url_base + query).read()
 
     def parse(self):
-        pass 
+
         '''
         articles = list()
         for entry in self.xml:
