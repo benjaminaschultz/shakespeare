@@ -2,7 +2,7 @@ from xml.dom.minidom  import parseString
 import urllib2
 
 #Class for interacting with the arXiv
-class arxiv(object):
+class ArXiv(object):
 
     def __init__(self,topic='cond-mat'):
         self.topic=topic
@@ -13,14 +13,14 @@ class arxiv(object):
 
     def fetch(self):
         self.xml = ''
-        query = 'query?search_query=cat:{}&start=0&max_results=100'.format(topic)
+        query = 'query?search_query=cat:{}&start=0&max_results=100'.format(self.topic)
         self.xml = urllib2.urlopen(self.url_base + query).read()
 
     # extract the relevant fields from the xml returned from our arXiv query
     def parse(self):
 
         articles = list()
-        entries = parseString(self.xml).getElementsByTagNamea('entry')
+        entries = parseString(self.xml).getElementsByTagName('entry')
 
         for entry in entries:
             article = dict()
