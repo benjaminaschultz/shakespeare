@@ -31,7 +31,7 @@ class ArXiv(object):
                 name = entry.getElementsByTagName('name')[0]
                 authors.append(author.toxml().replace('<name>','').replace('</name>',''))
 
-            article['authors']=authors
+            article['author']= ', '.join(authors)
 
             article['title'] = entry.getElementsByTagName('title')[0].toxml().replace('<title>','').replace('</title>','')
             article['url'] = entry.getElementsByTagName('id')[0].toxml().replace('<id>','').replace('</id>','')
