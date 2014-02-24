@@ -2,7 +2,7 @@
 import re, glob, sys
 import argparse
 import numpy as np
-from content_sources import *
+from content_sources import arxiv, bibtex, rss
 
 def find_keywords(text):
 
@@ -163,7 +163,7 @@ def filter_content(content,knowledge,method):
 
 def get_content(sources):
     all_content = list()
-    from src in sources:
+    for src in sources:
         try:
             src.fetch()
         except:
@@ -181,7 +181,7 @@ def get_content(sources):
     return all_content
 
 #training suite
-def train(good_sources, bad sources):
+def train(good_sources, bad_sources):
     pass
 
 def to_markdown(content):
@@ -192,7 +192,7 @@ def main(argv):
     #add command line options for sources, output prefs, database of "good" keywords
     parser = argparse.ArgumentParser()
     parser.add_argument('-b','--bibtex', help='bibtex files to fetch',dest='bibfiles', nargs='*',default=list())
-    parser.add_argument('-j','--journals', help='journals to fetch. Currently supports {}.'.format(' '.join(rss_feeds.keys())),
+    parser.add_argument('-j','--journals', help='journals to fetch. Currently supports {}.'.format(' '.join(rss.rss_feeds.keys())),
                         nargs='*',dest='titles',default=list())
     parser.add_argument('-a','--arXiv', help='arXiv categories to fetch',
                       nargs='*',dest='arXiv',default=list())
@@ -222,32 +222,32 @@ def main(argv):
         if args.good_source is None:
             print("When training, you must specify one good source")
             exit()
-        if not os.path.exist(args.good_source)):
+        if not os.path.exist(args.good_source):
             print("Specified training input does not exist")
             exit()
-        if not os.path.isfile(args.good_source)):
+        if not os.path.isfile(args.good_source):
             print("Specified training input is not a file")
             exit()
-        if not os.path.splitext(args.good_source)[1] == '.bib')
+        if not os.path.splitext(args.good_source)[1] == '.bib' :
             print("Training input must be in bibtex format")
             exit()
 
         #make sure you have a good destination to write your training output
-        if not os.path.exist(args.knowledge)):
+        if not os.path.exist(args.knowledge):
             print("Overwriting existings knowledege database")
             exit()
-        if not os.path.isfile(args.knowledge)):
+        if not os.path.isfile(args.knowledge):
             print("Specified training output exists and is not a file")
             exit()
-        if not os.path.splitext(args.knowledge)[1] == '.dat')
+        if not os.path.splitext(args.knowledge)[1] == '.dat' :
             print("Training output must be a dat file")
             exit()
 
         good_content = get_content([BibTex(args.good_source)])
 
-        bad_content = get_content([ArXiv(cat) for cat in args.arXiv] +
-                                  [BibTex(bibfile) for bibfile in args.bibfiles] +
-                                  [JournalFeed(journal) for j in journal])
+        bad_content = get_content([arxiv.ArXiv(cat) for cat in args.arXiv] +
+                                  [bibtex.BibTex(bibfile) for bibfile in args.bibfiles] +
+                                  [rss.JournalFeed(journal) for j in journal])
 
     #we are filtering new content through our existing knowledge
     else:
@@ -258,9 +258,9 @@ def main(argv):
 
         knowledge = parse_knowledge()
 
-        sources = [ArXiv(cat) for cat in args.arXiv] + \
-                  [BibTex(bibfile) for bibfile in args.bibfiles] + \
-                  [JournalFeed(journal) for j in journal]
+        sources = [arxiv.ArXiv(cat) for cat in args.arXiv] + \
+                  [bibtex.BibTex (bibfile) for bibfile in args.bibfiles] + \
+                  [rss.JournalFeed(journal) for j in journal]
         new_content = get_content(sources)
 
         relevant_content = filter_content(content,knowledge,method)
