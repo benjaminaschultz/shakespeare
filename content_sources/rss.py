@@ -1,6 +1,4 @@
 import feedparser
-import urllib2
-
 
 #rss feed dictionary
 rss_feeds = {
