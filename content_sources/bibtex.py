@@ -17,13 +17,13 @@ class BibTex(object):
         if not os.path.isfile(self.filename):
             raise Exception("Bibtex file {} is not a file".format(self.filename))
 
-    def parse(filename):
+    def parse(self):
         articles= list()
         with open(self.filename,'r') as bibfile:
             entries = BibTexParser(bibfile).get_entry_list()
             for entry in entries:
                 article=dict()
-                for kw in ['title','author','abstract','url']:
-                    article[kw]= entry[kw] if kw in entry else ''
+                for kw,btpkw in zip(['title','author','abstract','url'],['title','author','abstract','link']):
+                    article[kw]= entry[btpkw] if btpkw in entry else ''
                 articles.append(article)
         return articles

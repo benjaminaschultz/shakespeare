@@ -8,8 +8,8 @@ class arxiv(object):
         self.topic=topic
         self.url_base = 'http://export.arxiv.org/api/'
 
-    def __repr(self)__:
-        return ' '.join(['arXiv:{}'.format(t) for t in self.topics()])
+    def __repr__(self):
+        return 'arXiv:{}'.format(self.topic)
 
     def fetch(self):
         self.xml = ''
