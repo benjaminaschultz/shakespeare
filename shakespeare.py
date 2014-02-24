@@ -249,6 +249,8 @@ def main(argv):
                                   [bibtex.BibTex(bibfile) for bibfile in args.bibfiles] +
                                   [rss.JournalFeed(journal) for j in journal])
 
+        #train, and write out knowledge
+
     #we are filtering new content through our existing knowledge
     else:
 
@@ -261,11 +263,12 @@ def main(argv):
         sources = [arxiv.ArXiv(cat) for cat in args.arXiv] + \
                   [bibtex.BibTex (bibfile) for bibfile in args.bibfiles] + \
                   [rss.JournalFeed(journal) for j in journal]
+
         new_content = get_content(sources)
 
         relevant_content = filter_content(content,knowledge,method)
 
-        to_markdown(new_content)
+        to_markdown(relevant_content)
 
 
 
