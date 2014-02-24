@@ -2,6 +2,7 @@
 import re, glob, sys
 import argparse
 import numpy as np
+from content_sources import *
 
 def find_keywords(text):
 
@@ -69,7 +70,7 @@ def test(argv):
         nt_bad_scores[i] = base_bad*np.prod([bl_dict[kw] for kw in nt_kw_set if kw in bl_dict])
 
     for b,g,t in zip(nt_bad_scores,nt_good_scores,new_titles):
-        print(b,g,'GOOD!' if g>b and g>0 else 'BAD!',t)
+        print(b,g,'GOOD!' if g>b and g >0 else 'BAD!',t)
 
 def test(argv):
     #train the algorithm
@@ -129,9 +130,39 @@ def test(argv):
     for b,g,t in zip(nt_bad_scores,nt_good_scores,new_titles):
         print(b,g,'GOOD!' if g>b and g>0 else 'BAD!',t)
 
+#read existing knowledge from a database
+def parse_knowledge(knowledge_db):
+    pass
 
-def find_new_content(sources):
+def filter_content(content,knowledge,method):
 
+    #base rates of words in the good or bad set
+    base_good = knowledge[method]['base_good']
+    base_bad = knowledge[method]['base_bad']
+
+    #likelihoods of our keywords
+    gl_dict = knowledge[method]['good_likelihood']
+    bl_dict = knowledge[method]['bad_likelihood']
+
+    #new content
+    new_entries = [entry[method]  for entry in content]
+    nt_good_scores = np.empty(len(new_entries))
+    nt_bad_scores = np.empty(len(new_entries))
+
+    #compute score for each new title
+    for i,nt in enumerate(new_entries):
+        nt_kw_set = set(find_keywords(nt))
+        nt_good_scores[i] = base_good*np.prod([gl_dict[kw] for kw in nt_kw_set if kw in gl_dict])
+        nt_bad_scores[i] = base_bad*np.prod([bl_dict[kw] for kw in nt_kw_set if kw in bl_dict])
+
+    for b,g,t in zip(nt_bad_scores,nt_good_scores,content):
+        if g>b and g >0:
+            relevent_content.append(c)
+
+    return relevant_content
+
+def get_content(sources):
+    all_content = list()
     from src in sources:
         try:
             src.fetch()
@@ -145,10 +176,9 @@ def find_new_content(sources):
             print("parsing of content from {!r} has failed".format(src))
 
         if content:
-            #machine learing beep boop
-            relevant_content = [{'title':'This is a paper','authors':['James Joyce'], 'doi':'23452retdrwr'},
-                                {'title':'This is a paper','authors':['Ezra Pound', 'Ernest Hemingway'], 'doi':'werwe','url':'http://www.zombo.com'}]
-            return relevant_content
+            all_content += content
+
+    return all_content
 
 #training suite
 def train(good_sources, bad sources):
@@ -160,12 +190,82 @@ def to_markdown(content):
 def main(argv):
 
     #add command line options for sources, output prefs, database of "good" keywords
-    #use argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-b','--bibtex', help='bibtex files to fetch',dest='bibfiles', nargs='*',default=list())
+    parser.add_argument('-j','--journals', help='journals to fetch. Currently supports {}.'.format(' '.join(rss_feeds.keys())),
+                        nargs='*',dest='titles',default=list())
+    parser.add_argument('-a','--arXiv', help='arXiv categories to fetch',
+                      nargs='*',dest='arXiv',default=list())
+    parser.add_argument('--all_sources', help='flag to search from all sources.',action ='store_true')
+    parser.add_argument('--all_good_sources', help='flag to search from good sources. Specfied in your config file.',action ='store_true')
+    parser.add_argument('--train', help='flag to train. All sources beside "--train-input-good" are treated as bad/irrelevant papers',action ='store_true')
+    parser.add_argument('-g','--train_input_good', help='bibtex file containing relevant articles.',dest ='good_source',default=None)
+    parser.add_argument('-m','--method', help='Methods to try to find relevent papers. Right now, only all, title, author, and abstract are valid fields',
+                        dest='method',default='title')
+    parser.add_argument('-k', '--knowledge',
+                        help='path to database containing information about good and bad keywords. \
+                              If you are training, you must specifiy this, as it will be where your output is written ',
+                        dest='knowledge',default=None)
 
-    sources = [ArXiv('cond-mat'), BibTex('some_file.bib')]
-    new_content = find_new_content(sources)
-    #format new_content
-    to_markdown(new_content)
+    args = parser.parse_args(argv)
+
+    if  not args.method in ['title','abstract','author, all']:
+            print("Invalid method. Options are title, abstract, author, and all")
+            exit()
+
+    method = args.method
+
+    #Set up training if that's what we're doing
+    if args.train:
+
+        #check to make sure we have a good training input
+        if args.good_source is None:
+            print("When training, you must specify one good source")
+            exit()
+        if not os.path.exist(args.good_source)):
+            print("Specified training input does not exist")
+            exit()
+        if not os.path.isfile(args.good_source)):
+            print("Specified training input is not a file")
+            exit()
+        if not os.path.splitext(args.good_source)[1] == '.bib')
+            print("Training input must be in bibtex format")
+            exit()
+
+        #make sure you have a good destination to write your training output
+        if not os.path.exist(args.knowledge)):
+            print("Overwriting existings knowledege database")
+            exit()
+        if not os.path.isfile(args.knowledge)):
+            print("Specified training output exists and is not a file")
+            exit()
+        if not os.path.splitext(args.knowledge)[1] == '.dat')
+            print("Training output must be a dat file")
+            exit()
+
+        good_content = get_content([BibTex(args.good_source)])
+
+        bad_content = get_content([ArXiv(cat) for cat in args.arXiv] +
+                                  [BibTex(bibfile) for bibfile in args.bibfiles] +
+                                  [JournalFeed(journal) for j in journal])
+
+    #we are filtering new content through our existing knowledge
+    else:
+
+        #locate our knowledge
+        if (args.knowledge is None):
+            pass
+
+        knowledge = parse_knowledge()
+
+        sources = [ArXiv(cat) for cat in args.arXiv] + \
+                  [BibTex(bibfile) for bibfile in args.bibfiles] + \
+                  [JournalFeed(journal) for j in journal]
+        new_content = get_content(sources)
+
+        relevant_content = filter_content(content,knowledge,method)
+
+        to_markdown(new_content)
 
 
 
