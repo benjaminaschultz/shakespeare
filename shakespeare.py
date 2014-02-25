@@ -3,6 +3,7 @@ import re, glob, sys
 import argparse
 import numpy as np
 import scipy.sparse
+import cPickle as pickle
 from sklearn.naive_bayes import MultinomialNB
 from content_sources import arxiv, bibtex, rss
 
@@ -106,32 +107,22 @@ def test(argv):
 def parse_knowledge(knowledge_db):
     pass
 
-def filter_content(content,knowledge,method):
-
-    #base rates of words in the good or bad set
-    base_good = knowledge[method]['base_good']
-    base_bad = knowledge[method]['base_bad']
-
-    #likelihoods of our keywords
-    gl_dict = knowledge[method]['good_likelihood']
-    bl_dict = knowledge[method]['bad_likelihood']
+# \param nb = MultinormalNB classifier
+def filter_content(content,method,nb):
 
     #new content
-    new_entries = [entry[method]  for entry in content]
-    nt_good_scores = np.empty(len(new_entries))
-    nt_bad_scores = np.empty(len(new_entries))
+    new_entries = [find_keywords(entry[method])  for entry in content]
 
-    #compute score for each new title
-    for i,nt in enumerate(new_entries):
-        nt_kw_set = set(find_keywords(nt))
-        nt_good_scores[i] = base_good*np.prod([gl_dict[kw] for kw in nt_kw_set if kw in gl_dict])
-        nt_bad_scores[i] = base_bad*np.prod([bl_dict[kw] for kw in nt_kw_set if kw in bl_dict])
+    #compute vector for each new entry
+    X = scipy.sparse.lil_matrix((len(good_samples) + len(bad_samples),len(all_kw)))
 
-    for b,g,t in zip(nt_bad_scores,nt_good_scores,content):
-        if g>b and g >0:
-            relevent_content.append(c)
+    for j,kw in enumerate(all_kw):
+        for i,gs in enumerate(good_samples):
+            if kw in gs:
+                X[i,j]+=1
 
-    return relevant_content
+    categories = np.predict(X)
+    return [e for for c,e in zip(categories,content) if c =='good']
 
 def get_content(sources):
     all_content = list()
@@ -153,7 +144,7 @@ def get_content(sources):
     return all_content
 
 #training suite
-def train(good_sources, bad_sources,method):
+def train(good_sources, bad_sources,method,naive_bayes=None):
     #train the algorithm
     good_samples = [find_keywords(entry[method]) for entry in good_sources]
     bad_samples = [find_keywordS(entry[method]) for entry in bad_sources]
@@ -168,8 +159,14 @@ def train(good_sources, bad_sources,method):
                 X[i,j]+=1
     y = ['good']*len(good_samples) + ['bad']*len(bad_samples)
 
-    nb = MulivariateNB()
-    nb.fit(X,y)
+    if naive_bayes is None:
+        nb = MulivariateNB()
+        nb.fit(X,y)
+    else:
+        nb = naive_bayes
+        nb.partial_fit(X,y,classes=['good','bad'])
+
+    return self.nb
 
 def to_markdown(content):
     pass
@@ -193,6 +190,7 @@ def main(argv):
                         help='path to database containing information about good and bad keywords. \
                               If you are training, you must specifiy this, as it will be where your output is written ',
                         dest='knowledge',default=None)
+    parser.add_argument('--overwrite-knowledge', help='flag to overwrite knowledge,if training',action ='store_true', dest='overwrite_knowledge')
 
     args = parser.parse_args(argv)
 
@@ -220,15 +218,28 @@ def main(argv):
             exit()
 
         #make sure you have a good destination to write your training output
-        if not os.path.exist(args.knowledge):
-            print("Overwriting existings knowledege database")
-            exit()
-        if not os.path.isfile(args.knowledge):
-            print("Specified training output exists and is not a file")
-            exit()
-        if not os.path.splitext(args.knowledge)[1] == '.dat' :
-            print("Training output must be a dat file")
-            exit()
+
+        #existing naive_bayes object
+        nb=None
+        if args.knowledge is not None:
+            if not os.path.isfile(args.knowledge):
+                print("Specified training output exists and is not a file")
+                exit()
+
+            if not os.path.splitext(args.knowledge)[1] == '.p' :
+                print("Training output must be a pickle file")
+                exit()
+
+            knowledge=args.knowledge
+        else:
+            knowledge =os.path.expand_user('~/.shakespeare/nb.p')
+
+        if not os.path.exist(knowledge):
+            if args.overwrite_knowledge:
+                print("Overwriting existings knowledege database: {}".format(knowledge))
+            else:
+                print("Appending to existing knowledege database: {}".format(knowledge))
+                nb=pickle.load(args.knowledge)
 
         good_content = get_content([BibTex(args.good_source)])
 
@@ -237,6 +248,8 @@ def main(argv):
                                   [rss.JournalFeed(journal) for j in journal])
 
         #train, and write out knowledge
+        nb = train(good_content,bad_content,method,nb=nb)
+        pickle.dump(nb,knowledge)
 
     #we are filtering new content through our existing knowledge
     else:
@@ -245,7 +258,7 @@ def main(argv):
         if (args.knowledge is None):
             pass
 
-        knowledge = parse_knowledge()
+        nb = pickle.load(args.knowledge)
 
         sources = [arxiv.ArXiv(cat) for cat in args.arXiv] + \
                   [bibtex.BibTex (bibfile) for bibfile in args.bibfiles] + \
@@ -253,7 +266,7 @@ def main(argv):
 
         new_content = get_content(sources)
 
-        relevant_content = filter_content(content,knowledge,method)
+        relevant_content = filter_content(content,nb,method)
 
         to_markdown(relevant_content)
 
