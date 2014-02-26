@@ -9,7 +9,7 @@ class BibTex(object):
         self.filename = filename
 
     def __repr__(self):
-        return 'BibTex File {} '.format(self.file)
+        return 'BibTex File {} '.format(self.filename)
 
     def fetch(self):
         if not os.path.exists(self.filename):
