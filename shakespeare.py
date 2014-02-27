@@ -86,7 +86,6 @@ def filter_content(content,method,naive_bayes,keywords):
     new_samples = [find_keywords(entry[method])  for entry in content]
 
     #compute vector for each new entry
-    print(len(new_samples),len(keywords))
     X = scipy.sparse.lil_matrix((len(new_samples),len(keywords)))
 
     for j,kw in enumerate(keywords):
@@ -185,6 +184,20 @@ def to_markdown(content,output_file):
     except:
         print("Failed to write markdown file")
 
+def review_content(good_content,content,method,review_all=False):
+    to_review=[]
+    if review_all:
+        to_review = content
+    else:
+        to_review = good_content
+
+    human_class=[]
+    for entry in to_review:
+        print("Is \"{}\" a good entry?".format(entry[method]))
+        decision = raw_input('Y/n?').lower()
+        human_class.append(decision=='y')
+    return human_class
+
 def main(argv):
 
     #add command line options for sources, output prefs, database of "good" keywords
@@ -205,9 +218,9 @@ def main(argv):
                         help='path to database containing information about good and bad keywords. \
                               If you are training, you must specifiy this, as it will be where your output is written ',
                         dest='knowledge',default=None)
-    parser.add_argument('--overwrite-knowledge', help='flag to overwrite knowledge,if training',action ='store_false',default=True, dest='overwrite_knowledge')
-
-    parser.add_argument('--feedback', help='flag to overwrite knowledge,if training',action ='store_false',default=True, dest='overwrite_knowledge')
+    parser.add_argument('--overwrite-knowledge', help='flag to overwrite knowledge,if training',action ='store_true',default=True, dest='overwrite_knowledge')
+    parser.add_argument('--feedback', help='flag to give feedback after sorting content',action ='store_true',default=False, dest='feedback')
+    parser.add_argument('--review_all', help='review all the new selections. Otherwise, you will only review the good selections',action ='store_true',default=False, dest='review_all')
     args = parser.parse_args(argv)
 
     if  not args.method in ['title','abstract','author, all']:
@@ -255,17 +268,20 @@ def main(argv):
         #load the old knowledge
         nb,kw = load_knowledge(args.knowledge)
         sources = [arxiv.ArXiv(cat) for cat in args.arXiv] + \
-                  [bibtex.BibTex (bibfile) for bibfile in args.bibfiles] + \
+                  [ bibtex.BibTex (bibfile) for bibfile in args.bibfiles] + \
                   [rss.JournalFeed(journal) for journal in args.journals]
 
         new_content = get_content(sources)
 
-        relevant_content = filter_content(new_content,method,nb,kw)
+        good_content = filter_content(new_content,method,nb,kw)
 
         if (args.output):
-            to_markdown(relevant_content,args.output)
+            to_markdown(good_content,args.output)
         else:
-            print(relevant_content)
+            print(good_content)
+
+        if(args.feedback):
+            review_content(good_content,new_content,method,args.review_all)
 
 
 
