@@ -14,8 +14,8 @@ rss_feeds = {
             'PhysRevD':'http://feeds.aps.org/rss/recent/prd.xml',
             'PhysRevE':'http://feeds.aps.org/rss/recent/pre.xml',
             'PhysRevX':'http://feeds.aps.org/rss/recent/prx.xml',
-            'ACSNano':'http://feeds.feedburner.com/acs/ancac3'
-            'NanoLetters':'http://feeds.feedburner.com/acs/nalefd'
+            'ACSNano':'http://feeds.feedburner.com/acs/ancac3',
+            'NanoLetters':'http://feeds.feedburner.com/acs/nalefd',
             'JChemPhys':'http://phys.org/rss-feed/journals/journal-of-chemical-physics/',
             'JChemPhysB':'http://feeds.feedburner.com/acs/jpcbfk',
             'AngewanteChemie':'http://onlinelibrary.wiley.com/rss/journal/10.1002/(ISSN)1521-3773',
