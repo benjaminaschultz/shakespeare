@@ -81,17 +81,19 @@ def parse_knowledge(knowledge_db):
     pass
 
 # \param nb = MultinomialNB classifier
-def filter_content(content,method,naive_bayes,keywords):
+def filter_content(content,
+                   method,
+                   naive_bayes,
+                   keywords):
 
-    new_samples = [find_keywords(entry[method])  for entry in content]
+    new_samples = [find_keywords(entry[method]) for entry in content]
 
     #compute vector for each new entry
     X = scipy.sparse.lil_matrix((len(new_samples),len(keywords)))
 
     for j,kw in enumerate(keywords):
-        for i,gs in enumerate(new_samples):
-            if kw in gs:
-                X[i,j]+=1
+        for i,ns in enumerate(new_samples):
+            X[i,j]=ns.count(kw)
 
     categories = naive_bayes.predict(X)
     return [e for c,e in zip(categories,content) if c =='good']
@@ -140,37 +142,40 @@ def load_knowledge(knowledge):
         nb=pickle.load(open(knowledge+'/nb.p'))
         kw=pickle.load(open(knowledge+'/kw.p'))
 
-    return(nb,kw)
+    return(nb,kw, knowledge)
 
 
 #training suite
 def train(good_sources, bad_sources,method,naive_bayes=None,keywords=list()):
     #train the algorithm
-    good_samples = [find_keywords(entry[method]) for entry in good_sources]
-    bad_samples = [find_keywords(entry[method]) for entry in bad_sources]
+    good_samples = find_keywords(' '.join([entry[method] for entry in good_sources]))
+    bad_samples = find_keywords(' '.join([entry[method] for entry in bad_sources]))
 
-    new_kws = set([kw for kw in it.chain(*good_samples)]+ [kw for kw in it.chain(*bad_samples)])
 
-    all_kw = keywords + [nkw for nkw in new_kws if nkw not in keywords]
+    #if we have an exists knowledge base to append this new information to, do so
+    if naive_bayes:
+        new_kws = set(good_samples+bad_samples).difference(keywords)
 
-    X = scipy.sparse.lil_matrix((len(good_samples) + len(bad_samples),len(all_kw)))
+        #make some call to naive_bayes.partial_fit in here
+        X = np.concatenate((naive_bayes.feature_count_, np.zeros((naive_bayes.feature_count_.shape[0],naive_bayes.feature_count_.shape[1]+len(new_kws)))),1)
+        keywords += list(new_kws)
 
-    offset = len(good_samples)
-    for j,kw in enumerate(all_kw):
-        for i,gs in enumerate(good_samples):
-            X[i,j]=gs.count(kw)
-        for i,bs in enumerate(bad_samples):
-            X[i+offset,j]=bs.count(kw)
-    y = ['good']*len(good_samples) + ['bad']*len(bad_samples)
+        all_kw = keywords + [nkw for nkw in new_kws if nkw not in keywords]
 
-    if naive_bayes is None:
-        nb = MultinomialNB()
-        nb.fit(X,y)
     else:
-        nb = naive_bayes
-        nb.partial_fit(X,y,classes=['good','bad'])
+        all_kw = list(set(good_samples+bad_samples))
+        X = np.zeros((2,len(all_kw)))
 
-    return nb, all_kw
+    for j,kw in enumerate(all_kw):
+        X[0,j] += good_samples.count(kw)
+        X[1,j] += bad_samples.count(kw)
+
+    y = ['good','bad']
+
+    naive_bayes = MultinomialNB()
+    naive_bayes.fit(X,y)
+
+    return naive_bayes, all_kw
 
 def to_markdown(content,output_file):
     try:
@@ -195,8 +200,8 @@ def review_content(good_content,content,method,review_all=False):
     for entry in to_review:
         print("Is \"{}\" a good entry?".format(entry[method]))
         decision = raw_input('Y/n?').lower()
-        human_class.append(decision=='y')
-    return human_class
+        human_class.append('good' if decision=='y' else 'bad')
+    return human_class, to_review
 
 def main(argv):
 
@@ -247,15 +252,16 @@ def main(argv):
             exit()
 
         #load the existing knowledge
-        nb,kw = load_knowledge(args.knowledge)
-
-        #make sure you have a good destination to write your training output
+        nb,kw,knowledge = load_knowledge(args.knowledge)
+        if args.overwrite_knowledge:
+            nb=None
+            kw=list()
 
         good_content = get_content([bibtex.BibTex(args.good_source)])
 
         bad_content = get_content([arxiv.ArXiv(cat) for cat in args.arXiv] +
                                   [bibtex.BibTex(bibfile) for bibfile in args.bibfiles] +
-                                  [rss.JournalFeed(journal) for journal in args.journals])
+                                   [rss.JournalFeed(journal) for journal in args.journals])
 
         #train, and write out knowledge (naive_bayes class and keywords)
         nb, kw = train(good_content,bad_content,method,naive_bayes=nb, keywords=kw)
@@ -266,7 +272,7 @@ def main(argv):
     else:
 
         #load the old knowledge
-        nb,kw = load_knowledge(args.knowledge)
+        nb,kw,knowledge = load_knowledge(args.knowledge)
         sources = [arxiv.ArXiv(cat) for cat in args.arXiv] + \
                   [ bibtex.BibTex (bibfile) for bibfile in args.bibfiles] + \
                   [rss.JournalFeed(journal) for journal in args.journals]
@@ -281,7 +287,13 @@ def main(argv):
             print(good_content)
 
         if(args.feedback):
-            review_content(good_content,new_content,method,args.review_all)
+            human_class, reviewed_content = review_content(good_content,new_content,method,args.review_all)
+            good_content = [entry for cat,entry in zip(human_class,reviewed_content) if cat=='good']
+            bad_content = [entry for cat,entry in zip(human_class,reviewed_content) if cat=='bad']
+            nb, kw = train(good_content,bad_content,method,naive_bayes=nb, keywords=kw)
+            pickle.dump(nb,open(knowledge+'/nb.p','w'))
+            pickle.dump(kw,open(knowledge+'/kw.p','w'))
+
 
 
 
