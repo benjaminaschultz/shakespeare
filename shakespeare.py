@@ -280,11 +280,13 @@ def main(argv):
         new_content = get_content(sources)
 
         good_content = filter_content(new_content,method,nb,kw)
+        print("Fraction of good new content: {!r}".format(len(good_content)*1.0/len(new_content)))
 
         if (args.output):
             to_markdown(good_content,args.output)
         else:
-            print(good_content)
+            pass
+            #print(good_content)
 
         if(args.feedback):
             human_class, reviewed_content = review_content(good_content,new_content,method,args.review_all)
