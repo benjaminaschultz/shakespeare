@@ -81,20 +81,20 @@ def parse_knowledge(knowledge_db):
     pass
 
 # \param nb = MultinomialNB classifier
-def filter_content(content,method,nb):
+def filter_content(content,method,naive_bayes,keywords):
 
-    #new content
-    new_entries = [find_keywords(entry[method])  for entry in content]
+    new_samples = [find_keywords(entry[method])  for entry in content]
 
     #compute vector for each new entry
-    X = scipy.sparse.lil_matrix((len(good_samples) + len(bad_samples),len(all_kw)))
+    print(len(new_samples),len(keywords))
+    X = scipy.sparse.lil_matrix((len(new_samples),len(keywords)))
 
-    for j,kw in enumerate(all_kw):
-        for i,gs in enumerate(good_samples):
+    for j,kw in enumerate(keywords):
+        for i,gs in enumerate(new_samples):
             if kw in gs:
                 X[i,j]+=1
 
-    categories = np.predict(X)
+    categories = naive_bayes.predict(X)
     return [e for c,e in zip(categories,content) if c =='good']
 
 def get_content(sources):
@@ -115,6 +115,34 @@ def get_content(sources):
             all_content += content
 
     return all_content
+
+
+def load_knowledge(knowledge):
+    #existing naive_bayes object and keyword list
+    nb=None
+    kw=list()
+    if knowledge is not None:
+        if not os.path.isdir(knowledge):
+            print("Knowledge bust be a directory")
+            exit()
+
+        kfiles = glob.glob(knowledge+'/*')
+        if not 'nb.p' in kfiles:
+            print("Knowledge does not contain nb.p (pickled naive bayes object)")
+            exit()
+        if not 'kw.p' in kfiles:
+            print("Knowledge does not contain kw.p (pickled keyword list)")
+            exit()
+
+    else:
+        knowledge =os.path.expanduser('~/.shakespeare')
+
+    if os.path.exists(knowledge):
+        nb=pickle.load(open(knowledge+'/nb.p'))
+        kw=pickle.load(open(knowledge+'/kw.p'))
+
+    return(nb,kw)
+
 
 #training suite
 def train(good_sources, bad_sources,method,naive_bayes=None,keywords=list()):
@@ -145,13 +173,23 @@ def train(good_sources, bad_sources,method,naive_bayes=None,keywords=list()):
 
     return nb, all_kw
 
-def to_markdown(content):
-    pass
+def to_markdown(content,output_file):
+    try:
+        with open(output_file,'w') as outf:
+            outf.write('# Relevant articles\n')
+            for article in content:
+                outf.write("## {}\n".format(article['title']))
+                outf.write("* authors: {}\n".format(article['author']))
+                outf.write("* abstract: {}\n".format(article['abstract']))
+                outf.write("* [link]({})\n\n".format(article['url']))
+    except:
+        print("Failed to write markdown file")
 
 def main(argv):
 
-#add command line options for sources, output prefs, database of "good" keywords
+    #add command line options for sources, output prefs, database of "good" keywords
     parser = argparse.ArgumentParser()
+    parser.add_argument('-o','--output', help='output file name. only supports markdown right now.',dest ='output',default=None)
     parser.add_argument('-b','--bibtex', help='bibtex files to fetch',dest='bibfiles', nargs='*',default=list())
     parser.add_argument('-j','--journals', help='journals to fetch. Currently supports {}.'.format(' '.join(rss.rss_feeds.keys())),
                         nargs='*',dest='journals',default=list())
@@ -169,6 +207,7 @@ def main(argv):
                         dest='knowledge',default=None)
     parser.add_argument('--overwrite-knowledge', help='flag to overwrite knowledge,if training',action ='store_false',default=True, dest='overwrite_knowledge')
 
+    parser.add_argument('--feedback', help='flag to overwrite knowledge,if training',action ='store_false',default=True, dest='overwrite_knowledge')
     args = parser.parse_args(argv)
 
     if  not args.method in ['title','abstract','author, all']:
@@ -194,31 +233,10 @@ def main(argv):
             print("Training input must be in bibtex format")
             exit()
 
+        #load the existing knowledge
+        nb,kw = load_knowledge(args.knowledge)
+
         #make sure you have a good destination to write your training output
-
-        #existing naive_bayes object and keyword list
-        nb=None
-        kw=list()
-        if args.knowledge is not None:
-            if not os.path.isfile(args.knowledge):
-                print("Specified training output exists and is not a file")
-                exit()
-
-            if not os.path.splitext(args.knowledge)[1] == '.p' :
-                print("Training output must be a pickle file")
-                exit()
-
-            knowledge=args.knowledge
-        else:
-            knowledge =os.path.expanduser('~/.shakespeare')
-
-        if os.path.exists(knowledge):
-            if args.overwrite_knowledge:
-                print("Overwriting existings knowledege database: {}".format(knowledge))
-            else:
-                print("Appending to existing knowledege database: {}".format(knowledge))
-                nb=pickle.load(open(knowledge+'/nb.p'))
-                kw=pickle.load(open(knowledge+'/kw.p'))
 
         good_content = get_content([bibtex.BibTex(args.good_source)])
 
@@ -234,21 +252,20 @@ def main(argv):
     #we are filtering new content through our existing knowledge
     else:
 
-        #locate our knowledge
-        if (args.knowledge is None):
-            pass
-
-        nb = pickle.load(args.knowledge)
-
+        #load the old knowledge
+        nb,kw = load_knowledge(args.knowledge)
         sources = [arxiv.ArXiv(cat) for cat in args.arXiv] + \
                   [bibtex.BibTex (bibfile) for bibfile in args.bibfiles] + \
-                  [rss.JournalFeed(journal) for j in journal]
+                  [rss.JournalFeed(journal) for journal in args.journals]
 
         new_content = get_content(sources)
 
-        relevant_content = filter_content(content,nb,method)
+        relevant_content = filter_content(new_content,method,nb,kw)
 
-        to_markdown(relevant_content)
+        if (args.output):
+            to_markdown(relevant_content,args.output)
+        else:
+            print(relevant_content)
 
 
 
