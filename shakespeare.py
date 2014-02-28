@@ -8,8 +8,8 @@ import cPickle as pickle
 from sklearn.naive_bayes import MultinomialNB
 from content_sources import arxiv, bibtex, rss
 
+#remove punctuation and prepositions from a string
 def find_keywords(text):
-
     keywords=re.sub('[{}:?!@#$%^&*\(\)_.\\/,\'\"]','',text).upper()
     prepositions = open('data/prepositions.dat').read().upper().split()
 
@@ -18,65 +18,7 @@ def find_keywords(text):
 
     return keywords.encode('ascii','ignore').split()
 
-def test(argv):
-    #train the algorithm
-    #read in titles we like
-    good_titles_kw = find_keywords(open('data/allTitles.dat').read())
-    #read in titles we don't
-    bad_titles_kw = find_keywords(open('data/arxivTitles.500.dat').read())
-
-    #remore duplicate words
-    good_kw_set = set(good_titles_kw)
-    bad_kw_set = set(bad_titles_kw)
-
-    #make a set of all the words
-    all_kw_set = good_kw_set.union(bad_kw_set)
-
-
-    #count the occurences of each of the the keywords
-    good_freq = np.zeros(len(all_kw_set))
-    bad_freq = np.zeros(len(all_kw_set))
-    all_freq = np.zeros(len(all_kw_set))
-
-    ##good_txt = ' '.join(good_titles_kw)
-    ##bad_txt = ' '.join(bad_titles_kw)
-
-    for i,kw in enumerate(all_kw_set):
-        good_freq[i] += good_titles_kw.count(kw)# len(re.findall(r"\b{!s}\b".format(kw), good_txt))
-        bad_freq[i] += bad_titles_kw.count(kw) # len(re.findall(r"\b{!s}\b".format(kw), bad_txt))
-
-    all_freq = good_freq+bad_freq
-
-    #compute the base rates of words in the good or bad set
-    base_good = np.sum(good_freq)/np.sum(all_freq)
-    base_bad = np.sum(bad_freq)/np.sum(all_freq)
-
-    #compute the "evidence probabilites"
-    evidence_prob = all_freq/np.sum(all_freq)
-
-    #compute likelihood of word being good and bad
-    good_likelihood  = good_freq/all_freq
-    bad_likelihood  = bad_freq/all_freq
-
-    #make a dictionary to easily access likelihoods of our keywords
-    gl_dict = {kw:lh for kw,lh in zip(all_kw_set,good_likelihood)}
-    bl_dict = {kw:lh for kw,lh in zip(all_kw_set,bad_likelihood)}
-
-    #read in new titles
-    new_titles = open('data/arxivTitles.feb20.300.dat').readlines()
-    nt_good_scores = np.empty(len(new_titles))
-    nt_bad_scores = np.empty(len(new_titles))
-
-    #compute score for each new title
-    for i,nt in enumerate(new_titles):
-        nt_kw_set = set(find_keywords(nt))
-        nt_good_scores[i] = base_good*np.prod([gl_dict[kw] for kw in nt_kw_set if kw in gl_dict])
-        nt_bad_scores[i] = base_bad*np.prod([bl_dict[kw] for kw in nt_kw_set if kw in bl_dict])
-
-    for b,g,t in zip(nt_bad_scores,nt_good_scores,new_titles):
-        print(b,g,'GOOD!' if g>b and g>0 else 'BAD!',t)
-
-# \param nb = MultinomialNB classifier
+#Identify good entries using naive_bayes object
 def filter_content(content,
                    method,
                    naive_bayes,
@@ -94,6 +36,7 @@ def filter_content(content,
     categories = naive_bayes.predict(X)
     return [e for c,e in zip(categories,content) if c =='good']
 
+#Gather content from all sources (BibTex files, arXiv, journal RSS feeds, etc)
 def get_content(sources):
     all_content = list()
     for src in sources:
@@ -113,6 +56,24 @@ def get_content(sources):
 
     return all_content
 
+#Human review of content classification
+#You can review all the content, or just one that the nb classifier thought were good.
+#Human input is used to train the NB classifier.
+def review_content(good_content,content,method,review_all=False):
+    to_review=[]
+    if review_all:
+        to_review = content
+    else:
+        to_review = good_content
+
+    human_class=[]
+    for entry in to_review:
+        print("Is \"{}\" a good entry?".format(entry[method]))
+        decision = raw_input('Y/n?').lower()
+        human_class.append('good' if decision=='y' else 'bad')
+    return human_class, to_review
+
+#Load in a train naive_bayes object and keyword list
 def load_knowledge(knowledge):
     #existing naive_bayes object and keyword list
     nb=None
@@ -139,8 +100,7 @@ def load_knowledge(knowledge):
 
     return(nb,kw, knowledge)
 
-
-#training suite
+#Train naive_bayes object on a data set
 def train(good_sources, bad_sources,method,naive_bayes=None,keywords=list()):
     #train the algorithm
     good_samples = find_keywords(' '.join([entry[method] for entry in good_sources]))
@@ -172,31 +132,18 @@ def train(good_sources, bad_sources,method,naive_bayes=None,keywords=list()):
 
     return naive_bayes, all_kw
 
+#export content to simple markdown format
 def to_markdown(content,output_file):
     try:
          with open(output_file,'w') as outf:
             outf.write('# Relevant articles\n')
             for article in content:
-                outf.write("## {}\n".format(article['title'].encode('ascii','ignore')))
-                outf.write("* authors: {}\n".format(article['author'].encode('ascii','ignore')))
-                outf.write("* abstract: {}\n".format(article['abstract'].encode('ascii','ignore')))
-                outf.write("* [link]({})\n\n".format(article['url'].encode('ascii','ignore')))
+                outf.write("## {}\n".format(re.sub(r'\n',' ',article['title']).encode('ascii','ignore')))
+                outf.write("* authors: {}\n".format(re.sub(r'\n',' ',article['author']).encode('ascii','ignore')))
+                outf.write("* abstract: {}\n".format(re.sub(r'\n',' ',article['abstract']).encode('ascii','ignore')))
+                outf.write("* [link]({})\n\n".format(re.sub(r'\n',' ',article['url']).encode('ascii','ignore')))
     except:
         print("Failed to write markdown file")
-
-def review_content(good_content,content,method,review_all=False):
-    to_review=[]
-    if review_all:
-        to_review = content
-    else:
-        to_review = good_content
-
-    human_class=[]
-    for entry in to_review:
-        print("Is \"{}\" a good entry?".format(entry[method]))
-        decision = raw_input('Y/n?').lower()
-        human_class.append('good' if decision=='y' else 'bad')
-    return human_class, to_review
 
 def main(argv):
 

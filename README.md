@@ -5,7 +5,7 @@ Identify relevant scientific papers with simple machine learning techniques
 
 Installation
 ===========
-Copy shakespeare.py and content\_sources to your pythonpath.
+Copy shakespeare.py, data and content\_sources to your pythonpath.
 
 Depends on `bibtexparser`, `feedparser` `scikit-learn` packages, which can be installed via pip
 
