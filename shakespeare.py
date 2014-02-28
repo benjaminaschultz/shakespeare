@@ -76,10 +76,6 @@ def test(argv):
     for b,g,t in zip(nt_bad_scores,nt_good_scores,new_titles):
         print(b,g,'GOOD!' if g>b and g>0 else 'BAD!',t)
 
-#read existing knowledge from a database
-def parse_knowledge(knowledge_db):
-    pass
-
 # \param nb = MultinomialNB classifier
 def filter_content(content,
                    method,
@@ -116,7 +112,6 @@ def get_content(sources):
             all_content += content
 
     return all_content
-
 
 def load_knowledge(knowledge):
     #existing naive_bayes object and keyword list
