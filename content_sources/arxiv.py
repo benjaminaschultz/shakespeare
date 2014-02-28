@@ -1,6 +1,23 @@
 from xml.dom.minidom  import parseString
 import urllib2
-
+arxiv_cats = ['astro-ph',
+              'cond-mat',
+              'gr-gc',
+              'hep-ex',
+              'hep-lat',
+              'hep-ph',
+              'hep-th',
+              'math-ph',
+              'nlin',
+              'nucl-ex',
+              'nucl-th',
+              'physics',
+              'quant-ph',
+              'math',
+              'CoRR',
+              'q-bio',
+              'q-fin',
+              'stat']
 #Class for interacting with the arXiv
 class ArXiv(object):
 

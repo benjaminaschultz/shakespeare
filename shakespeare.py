@@ -16,7 +16,7 @@ def find_keywords(text):
     for p in prepositions:
         keywords = re.sub(r"\b{!s}\b".format(p),' ',keywords)
 
-    return keywords.split()
+    return keywords.encode('ascii','ignore').split()
 
 def test(argv):
     #train the algorithm
@@ -179,13 +179,13 @@ def train(good_sources, bad_sources,method,naive_bayes=None,keywords=list()):
 
 def to_markdown(content,output_file):
     try:
-        with open(output_file,'w') as outf:
+         with open(output_file,'w') as outf:
             outf.write('# Relevant articles\n')
             for article in content:
-                outf.write("## {}\n".format(article['title']))
-                outf.write("* authors: {}\n".format(article['author']))
-                outf.write("* abstract: {}\n".format(article['abstract']))
-                outf.write("* [link]({})\n\n".format(article['url']))
+                outf.write("## {}\n".format(article['title'].encode('ascii','ignore')))
+                outf.write("* authors: {}\n".format(article['author'].encode('ascii','ignore')))
+                outf.write("* abstract: {}\n".format(article['abstract'].encode('ascii','ignore')))
+                outf.write("* [link]({})\n\n".format(article['url'].encode('ascii','ignore')))
     except:
         print("Failed to write markdown file")
 
@@ -259,9 +259,13 @@ def main(argv):
 
         good_content = get_content([bibtex.BibTex(args.good_source)])
 
-        bad_content = get_content([arxiv.ArXiv(cat) for cat in args.arXiv] +
-                                  [bibtex.BibTex(bibfile) for bibfile in args.bibfiles] +
-                                   [rss.JournalFeed(journal) for journal in args.journals])
+        if args.all_sources:
+            bad_content = get_content([arxiv.ArXiv(cat) for cat in arxiv.arxiv_cats] +
+                                      [rss.JournalFeed(journal) for journal in rss.rss_feeds.keys()])
+        else:
+            bad_content = get_content([arxiv.ArXiv(cat) for cat in args.arXiv] +
+                                      [bibtex.BibTex(bibfile) for bibfile in args.bibfiles] +
+                                      [rss.JournalFeed(journal) for journal in args.journals])
 
         #train, and write out knowledge (naive_bayes class and keywords)
         nb, kw = train(good_content,bad_content,method,naive_bayes=nb, keywords=kw)
@@ -273,14 +277,19 @@ def main(argv):
 
         #load the old knowledge
         nb,kw,knowledge = load_knowledge(args.knowledge)
-        sources = [arxiv.ArXiv(cat) for cat in args.arXiv] + \
-                  [ bibtex.BibTex (bibfile) for bibfile in args.bibfiles] + \
-                  [rss.JournalFeed(journal) for journal in args.journals]
+        if args.all_sources:
+            sources = [arxiv.ArXiv(cat) for cat in arxiv.arxiv_cats] + \
+                      [rss.JournalFeed(journal) for journal in rss.rss_feeds.keys()]
+        else:
+            sources = [arxiv.ArXiv(cat) for cat in args.arXiv] + \
+                      [ bibtex.BibTex (bibfile) for bibfile in args.bibfiles] + \
+                      [rss.JournalFeed(journal) for journal in args.journals]
 
         new_content = get_content(sources)
 
         good_content = filter_content(new_content,method,nb,kw)
         print("Fraction of good new content: {!r}".format(len(good_content)*1.0/len(new_content)))
+        print("total  content parsed: {!r}".format(len(new_content)))
 
         if (args.output):
             to_markdown(good_content,args.output)
