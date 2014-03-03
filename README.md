@@ -7,6 +7,8 @@ Installation
 ===========
 Copy shakespeare.py, data and content\_sources to your pythonpath.
 
+To intsall an example knowledge set, copy examples' contents to $HOME/.shakespeare
+
 Depends on `bibtexparser`, `feedparser` `scikit-learn` packages, which can be installed via pip
 
     pip install bibtexparser scikit-learn feedparser

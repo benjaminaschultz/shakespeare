@@ -33,6 +33,9 @@ def filter_content(content,
         for i,ns in enumerate(new_samples):
             X[i,j]=ns.count(kw)
 
+    print(len(keywords))
+    print(naive_bayes.feature_count_.shape)
+    print(X.shape)
     categories = naive_bayes.predict(X)
     return [e for c,e in zip(categories,content) if c =='good']
 
@@ -47,6 +50,7 @@ def get_content(sources):
 
         content = None
         try:
+            print('parsing {!r}'.format(src))
             content = src.parse()
         except:
             print("parsing of content from {!r} has failed".format(src))
@@ -68,12 +72,12 @@ def review_content(good_content,content,method,review_all=False):
 
     human_class=[]
     for entry in to_review:
-        print("Is \"{}\" a good entry?".format(entry[method]))
+        print("Is \"{}\" a good entry?".format(entry[method].encode('ascii','ignore')))
         decision = raw_input('Y/n?').lower()
         human_class.append('good' if decision=='y' else 'bad')
     return human_class, to_review
 
-#Load in a train naive_bayes object and keyword list
+#Load in a trained naive_bayes object and keyword list
 def load_knowledge(knowledge):
     #existing naive_bayes object and keyword list
     nb=None
@@ -109,15 +113,18 @@ def train(good_sources, bad_sources,method,naive_bayes=None,keywords=list()):
 
     #if we have an exists knowledge base to append this new information to, do so
     if naive_bayes:
+        new_kws = set(good_samples+bad_samples)
+        print('Using old keywords as well')
+        print("# old keywords = {}\n # new keywords = {}".format(len(keywords),len(new_kws)))
         new_kws = set(good_samples+bad_samples).difference(keywords)
+        print("# fresh keywords = {}\n".format(len(new_kws)))
 
-        #make some call to naive_bayes.partial_fit in here
-        X = np.concatenate((naive_bayes.feature_count_, np.zeros((naive_bayes.feature_count_.shape[0],naive_bayes.feature_count_.shape[1]+len(new_kws)))),1)
-        keywords += list(new_kws)
-
-        all_kw = keywords + [nkw for nkw in new_kws if nkw not in keywords]
+        #make some call to naive_bayes.partial_fssit in here
+        X = np.concatenate((naive_bayes.feature_count_, np.zeros((naive_bayes.feature_count_.shape[0],len(new_kws)))),1)
+        all_kw = keywords + list(new_kws)
 
     else:
+        print('Only using keyownrds from this content set')
         all_kw = list(set(good_samples+bad_samples))
         X = np.zeros((2,len(all_kw)))
 
@@ -165,7 +172,7 @@ def main(argv):
                         help='path to database containing information about good and bad keywords. \
                               If you are training, you must specifiy this, as it will be where your output is written ',
                         dest='knowledge',default=None)
-    parser.add_argument('--overwrite-knowledge', help='flag to overwrite knowledge,if training',action ='store_true',default=True, dest='overwrite_knowledge')
+    parser.add_argument('--overwrite-knowledge', help='flag to overwrite knowledge,if training',action ='store_true',default=False, dest='overwrite_knowledge')
     parser.add_argument('--feedback', help='flag to give feedback after sorting content',action ='store_true',default=False, dest='feedback')
     parser.add_argument('--review_all', help='review all the new selections. Otherwise, you will only review the good selections',action ='store_true',default=False, dest='review_all')
     args = parser.parse_args(argv)
@@ -228,7 +235,7 @@ def main(argv):
                       [rss.JournalFeed(journal) for journal in args.journals]
 
         new_content = get_content(sources)
-
+        pickle.dump(new_content,open('all_content.p','w'))
         good_content = filter_content(new_content,method,nb,kw)
         print("Fraction of good new content: {!r}".format(len(good_content)*1.0/len(new_content)))
         print("total  content parsed: {!r}".format(len(new_content)))
