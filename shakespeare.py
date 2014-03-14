@@ -43,17 +43,17 @@ def filter_content(content,
 def get_content(sources):
     all_content = list()
     for src in sources:
-        #try:
-        src.fetch()
-        #except:
-        #print("Fetch of content from {!r} has failed".format(src))
+        try:
+            src.fetch()
+        except:
+            print("Fetch of content from {!r} has failed".format(src))
 
         content = None
-        #try:
-        print('parsing {!r}'.format(src))
-        content = src.parse()
-        #except:
-        #print("parsing of content from {!r} has failed".format(src))
+        try:
+            print('parsing {!r}'.format(src))
+            content = src.parse()
+        except:
+            print("parsing of content from {!r} has failed".format(src))
 
         if content:
             all_content += content
