@@ -1,5 +1,6 @@
 from xml.dom.minidom  import parseString
 import urllib2
+import datetime as dt
 arxiv_cats = ['astro-ph',
               'cond-mat',
               'gr-gc',
@@ -29,8 +30,12 @@ class ArXiv(object):
         return 'arXiv:{}'.format(self.topic)
 
     def fetch(self):
+        today=dt.date.today()
+        week_ago = today - dt.timedelta(days=7)
+        end_date = "{:04d}{:02d}{:02d}2359".format(today.year,today.month,today.day)
+        start_date = "{:04d}{:02d}{:02d}0000".format(week_ago.year,week_ago.month,week_ago.day)
         self.xml = ''
-        query = 'query?search_query=cat:{}&start=0&max_results=100'.format(self.topic)
+        query = 'query?search_query=cat:{}*+AND+submittedDate:[{}+TO+{}]&max_results=100'.format(self.topic,start_date,end_date)
         self.xml = urllib2.urlopen(self.url_base + query).read()
 
     # extract the relevant fields from the xml returned from our arXiv query

@@ -1,9 +1,11 @@
 import feedparser
+import datetime as dt
 
 #rss feed dictionary
 rss_feeds = {
             'pnas':'http://www.pnas.org/rss/current.xml',
-            'small':'http://onlinelibrary.wiley.com/rss/journal/10.1002/%28issn%291613-6829',
+            'small':'http://onlinelibrary.wiley.com/rss/journal/10.1002/(ISSN)1613-6829',
+            'advmat':'http://onlinelibrary.wiley.com/rss/journal/10.1002/(ISSN)1521-4095',
             'nature':'http://feeds.nature.com/nature/rss/current?format=xml',
             'science':'https://www.sciencemag.org/rss/current.xml',
             'prl':'http://feeds.aps.org/rss/recent/prl.xml',
@@ -40,11 +42,26 @@ class JournalFeed(object):
     def parse(self):
         articles = list()
         entries = feedparser.parse(self.address)['entries']
-
+        today = dt.date.today()
         for entry in entries:
             article = dict()
             for kw,fkw in zip(['title','author','abstract','url'],['title','author','summary','link']):
                article[kw] = entry[fkw] if fkw in entry else ''
-            articles.append(article)
+            #make sure this article is recent
+            t_str=None
+            if 'updated' in entry:
+                t_str = entry['updated_parsed']
+            elif 'published' in entry:
+                t_str = entry['published_parsed']
+            if t_str:
+                day = t_str.tm_mday
+                month = t_str.tm_mon
+                year = t_str.tm_year
+                pdate = dt.date(day=day,month=month,year=year)
+                print((today-pdate).days)
+                if (today-pdate).days<8:
+                    articles.append(article)
+            else:
+                articles.append(article)
 
         return articles

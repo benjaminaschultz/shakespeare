@@ -43,17 +43,17 @@ def filter_content(content,
 def get_content(sources):
     all_content = list()
     for src in sources:
-        try:
-            src.fetch()
-        except:
-            print("Fetch of content from {!r} has failed".format(src))
+        #try:
+        src.fetch()
+        #except:
+        #print("Fetch of content from {!r} has failed".format(src))
 
         content = None
-        try:
-            print('parsing {!r}'.format(src))
-            content = src.parse()
-        except:
-            print("parsing of content from {!r} has failed".format(src))
+        #try:
+        print('parsing {!r}'.format(src))
+        content = src.parse()
+        #except:
+        #print("parsing of content from {!r} has failed".format(src))
 
         if content:
             all_content += content
@@ -229,13 +229,21 @@ def main(argv):
         if args.all_sources:
             sources = [arxiv.ArXiv(cat) for cat in arxiv.arxiv_cats] + \
                       [rss.JournalFeed(journal) for journal in rss.rss_feeds.keys()]
+        elif args.all_good_sources:
+            arxiv_cats = ['cond-mat','stat']
+            journals = ['science','nature','small','prl',
+                        'physreve','physrevx','acsnano',
+                        'advmat','jchemphysb','natphys',
+                        'natmat','natnano','langmuir']
+
+            sources = [arxiv.ArXiv(cat) for cat in arxiv_cats] + \
+                      [rss.JournalFeed(journal) for journal in journals]
         else:
             sources = [arxiv.ArXiv(cat) for cat in args.arXiv] + \
                       [ bibtex.BibTex (bibfile) for bibfile in args.bibfiles] + \
                       [rss.JournalFeed(journal) for journal in args.journals]
 
         new_content = get_content(sources)
-        pickle.dump(new_content,open('all_content.p','w'))
         good_content = filter_content(new_content,method,nb,kw)
         print("Fraction of good new content: {!r}".format(len(good_content)*1.0/len(new_content)))
         print("total  content parsed: {!r}".format(len(new_content)))
