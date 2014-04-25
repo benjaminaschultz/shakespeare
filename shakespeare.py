@@ -33,9 +33,6 @@ def filter_content(content,
         for i,ns in enumerate(new_samples):
             X[i,j]=ns.count(kw)
 
-    print(len(keywords))
-    print(naive_bayes.feature_count_.shape)
-    print(X.shape)
     categories = naive_bayes.predict(X)
     return [e for c,e in zip(categories,content) if c =='good']
 
@@ -231,7 +228,7 @@ def main(argv):
                       [rss.JournalFeed(journal) for journal in rss.rss_feeds.keys()]
         elif args.all_good_sources:
             arxiv_cats = ['cond-mat','stat']
-            journals = ['science','nature','small','prl',
+            journals = ['science','nature','small','prl','pnas',
                         'physreve','physrevx','acsnano',
                         'advmat','jchemphysb','natphys',
                         'natmat','natnano','langmuir']

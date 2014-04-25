@@ -58,7 +58,6 @@ class JournalFeed(object):
                 month = t_str.tm_mon
                 year = t_str.tm_year
                 pdate = dt.date(day=day,month=month,year=year)
-                print((today-pdate).days)
                 if (today-pdate).days<8:
                     articles.append(article)
             else:
