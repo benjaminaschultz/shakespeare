@@ -103,10 +103,15 @@ def load_knowledge(knowledge):
 
 #Train naive_bayes object on a data set
 def train(good_sources, bad_sources,method,naive_bayes=None,keywords=list()):
+    """
+    This trains a MultinomialNB classifier with a bag of good words and a
+    bag of bad words. This requires a kinda goofy work around to use sklearn's
+    MultivariateNB class. In particular, updating the classifier with new content
+    that contains new keywords, I don't use sklearn's partial_fit.
+    """
     #train the algorithm
     good_samples = find_keywords(' '.join([entry[method] for entry in good_sources]))
     bad_samples = find_keywords(' '.join([entry[method] for entry in bad_sources]))
-
 
     #if we have an exists knowledge base to append this new information to, do so
     if naive_bayes:
@@ -116,10 +121,13 @@ def train(good_sources, bad_sources,method,naive_bayes=None,keywords=list()):
         new_kws = set(good_samples+bad_samples).difference(keywords)
         print("# fresh keywords = {}\n".format(len(new_kws)))
 
-        #make some call to naive_bayes.partial_fssit in here
+        #Instead of doing a partial fit here, i want to expand the list of keywords
+        #naive_bayes.feature_count_[0] contains the counts of words in 'bad' entries
+        #naive_bayes.feature_count_[1] contains the counts of words in 'good' entries
+        #This grabs the frequencies of all the old keywords and puts them into X
+        #the entries corresponding to the new keywords are 0s appended to X
         X = np.concatenate((naive_bayes.feature_count_, np.zeros((naive_bayes.feature_count_.shape[0],len(new_kws)))),1)
         all_kw = keywords + list(new_kws)
-
     else:
         print('Only using keyownrds from this content set')
         all_kw = list(set(good_samples+bad_samples))
@@ -129,7 +137,7 @@ def train(good_sources, bad_sources,method,naive_bayes=None,keywords=list()):
         X[0,j] += good_samples.count(kw)
         X[1,j] += bad_samples.count(kw)
 
-    y = ['good','bad']
+    y = ['bad','good']
 
     naive_bayes = MultinomialNB()
     naive_bayes.fit(X,y)
