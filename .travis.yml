@@ -3,7 +3,7 @@ python:
 
 #install the required modules
 install:
-  - python setup.py install --prefix = $HOME
+  - python setup.py install --prefix=$HOME
 
 #run some test scripts
 script: nosetests test
