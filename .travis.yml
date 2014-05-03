@@ -1,6 +1,9 @@
 python:
   - "2.7"
 
+env:
+  - DEPS="numpy scikit-learn nose matplotlib bibtexparser feedparser"
+
 #install the required modules
 install:
   - python setup.py install --user
