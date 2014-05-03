@@ -1,0 +1,9 @@
+python:
+  - "2.7"
+
+#install the required modules
+install:
+  - python setup.py install
+
+#run some test scripts
+script: nosetests test
