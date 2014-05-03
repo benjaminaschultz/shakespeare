@@ -9,7 +9,5 @@ install:
   - python setup.py install --user
 
 #run some test scripts
-script:
-  - env
-  - echo $PATH
-  - nosetests test
+script: 
+  - which nosetests
