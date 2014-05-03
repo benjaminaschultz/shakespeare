@@ -2,11 +2,14 @@ python:
   - "2.7"
 
 env:
-  - DEPS="numpy scikit-learn nose matplotlib bibtexparser feedparser"
+  - DEPS="numpy scikit-learn  matplotlib bibtexparser feedparser"
 
 #install the required modules
 install:
   - python setup.py install --user
 
 #run some test scripts
-script: nosetests test
+script:
+  - env
+  - echo $PATH
+  - nosetests test
