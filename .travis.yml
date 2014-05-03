@@ -6,6 +6,7 @@ env:
 
 #install the required modules
 install:
+  - pip install $DEPS
   - python setup.py install --user
 
 #run some test scripts
