@@ -2,7 +2,7 @@ python:
   - "2.7"
 
 env:
-  - DEPS="numpy scikit-learn  matplotlib bibtexparser feedparser"
+  - DEPS="numpy scikit-learn  bibtexparser feedparser"
 
 #install the required modules
 install:
