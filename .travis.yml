@@ -12,3 +12,4 @@ install:
 #run some test scripts
 script: 
   - which nosetests
+  - nosetests test
