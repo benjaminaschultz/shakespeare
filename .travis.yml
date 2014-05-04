@@ -1,12 +1,13 @@
 python:
   - "2.7"
 
-env:
-  - DEPS="numpy scikit-learn  bibtexparser feedparser"
+virtualenv:
+  system_site_packages: true
 
 #install the required modules
 install:
-  - pip install --user $DEPS
+  - apt-get install python-scipy python-numpy python-nose python-scikits-learn
+  - pip install --user bibtexparser feedparser
   - python setup.py install --user
 
 #run some test scripts
