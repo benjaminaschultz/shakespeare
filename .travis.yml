@@ -1,15 +1,18 @@
 python:
   - "2.7"
 
-env:
-  - DEPS="numpy scikit-learn  matplotlib bibtexparser feedparser"
+virtualenv:
+  system_site_packages: true
 
 #install the required modules
 install:
+  - export SITE_PKG_DIR=$VIRTUAL_ENV/lib/python$TRAVIS_PYTHON_VERSION/site-packages
+  - rm -f $VIRTUAL_ENV/lib/python$TRAVIS_PYTHON_VERSION/no-global-site-packages.txt
+  - sudo apt-get install python-scipy python-numpy python-nose python-scikits-learn
+  - pip install --user bibtexparser feedparser nose
   - python setup.py install --user
 
 #run some test scripts
-script:
-  - env
-  - echo $PATH
+script: 
+  - which nosetests
   - nosetests test
