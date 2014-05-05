@@ -5,13 +5,21 @@ Identify relevant scientific papers with simple machine learning techniques
 
 Installation
 ===========
-Copy shakespeare.py, data and content\_sources to your pythonpath.
+run:
 
-To intsall an example knowledge set, copy examples' contents to $HOME/.shakespeare
+```
+python setup.py --user install
+```
+
+to install shakespeare in ~/.local.
+
+This will install the shakespeare python library, and also a script `shakespeare` that handles training, content fetching and content filtering.
+
+To install an example knowledge set, copy examples' contents to $HOME/.shakespeare
 
 Depends on `bibtexparser`, `feedparser` `scikit-learn` packages, which can be installed via pip
 
-    pip install bibtexparser scikit-learn feedparser
+    pip install --user bibtexparser scikit-learn feedparser
 
 
 
@@ -41,24 +49,24 @@ Usage
 
 Train naive\_bayes algorithm
 
-    ./shakespeare -g thegoodstuff.bib -b thebadstuff.bib --train
+    shakespeare -g thegoodstuff.bib -b thebadstuff.bib --train
 
 Find papers from nature nano and PNAS
 
-    ./shakespeare.py -j natnano pnas -o cool_papers.md
+    shakespeare -j natnano pnas -o cool_papers.md
 
 Find papers from the arxiv cond-mat.soft and math, then review the algorithms selection
 
-    ./shakespeare.py -a cond-mat.soft math --feedback
+    shakespeare -a cond-mat.soft math --feedback
 
 
 Help printout
 
-    usage: shakespeare.py [-h] [-o OUTPUT] [-b [BIBFILES [BIBFILES ...]]]
+    usage: shakespeare    [-h] [-o OUTPUT] [-b [BIBFILES [BIBFILES ...]]]
                           [-j [JOURNALS [JOURNALS ...]]] [-a [ARXIV [ARXIV ...]]]
                           [--all_sources] [--all_good_sources] [--train]
                           [-g GOOD_SOURCE] [-m METHOD] [-k KNOWLEDGE]
-                          [--overwrite-knowledge] [--feedback] [--review_all]
+                           [--overwrite-knowledge] [--feedback] [--review_all]
     optional arguments:
       -h, --help            show this help message and exit
       -o OUTPUT, --output OUTPUT
@@ -91,11 +99,9 @@ Help printout
                             flag to overwrite knowledge,if training
       --feedback            flag to give feedback after sorting content
       --review_all          review all the new selections. Otherwise, you will
-                            only review the good selections
+                             only review the good selections
 
 
 TODO
 ======
-* Train a bunch and see if this is worth any more time
-* Make an nice installer
-* Add support for a config file for setting defaults (which journals to search, etc)
+* Add support for a config file for setting defaults (e.g., which journals for search for when using the `--all_good_sources` command
