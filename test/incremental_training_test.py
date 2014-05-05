@@ -1,0 +1,76 @@
+import sklearn as skl
+import numpy as np
+import pickle as p
+import sys
+sys.path.append('../')
+import shakespeare as shake
+
+
+def test_total_train():
+    letters = np.array(['{:c}'.format(i) for i in np.arange(65,65+26)])
+    words = letters[np.random.uniform(0,26,size=(10000,15)).astype(np.int)]
+    words = np.array([''.join(w) for w in words])
+    good_titles =  words[np.random.uniform(0,1000,size=(300,15)).astype(np.int)]
+    good_titles = [{'title':' '.join(g)} for g in good_titles]
+    bad_titles =  words[np.random.uniform(800,4000,size=(300,15)).astype(np.int)]
+    bad_titles = [{'title':' '.join(g)} for g in bad_titles]
+    shk = skl.naive_bayes.MultinomialNB()
+    nb,kw=shake.train(good_titles,bad_titles,'title')
+
+    test_good_titles =  words[np.random.uniform(0,1000,size=(100,15)).astype(np.int)]
+    test_good_titles = [{'title':' '.join(g)} for g in test_good_titles]
+    test_bad_titles =  words[np.random.uniform(800,4000,size=(100,15)).astype(np.int)]
+    test_bad_titles = [{'title':' '.join(g)} for g in test_bad_titles]
+    screened = shake.filter_content(test_good_titles+test_bad_titles,'title',nb,kw)
+
+    num_bad_tot = np.sum([s in test_bad_titles for s in screened])
+    num_good_tot= np.sum([s in test_good_titles for s in screened])
+
+    assert(num_good_tot*1.0/len(test_good_titles)>0.95)
+    assert(num_bad_tot*1.0/len(test_good_titles)<0.05)
+test_total_train.priority=1
+test_total_train.status="stable"
+test_total_train.slow=True
+
+def test_incremental_train():
+    letters = np.array(['{:c}'.format(i) for i in np.arange(65,65+26)])
+    words = letters[np.random.uniform(0,26,size=(10000,15)).astype(np.int)]
+    words = np.array([''.join(w) for w in words])
+    good_titles =  words[np.random.uniform(0,1000,size=(300,15)).astype(np.int)]
+    good_titles = [{'title':' '.join(g)} for g in good_titles]
+    bad_titles =  words[np.random.uniform(800,4000,size=(300,15)).astype(np.int)]
+    bad_titles = [{'title':' '.join(g)} for g in bad_titles]
+    shk = skl.naive_bayes.MultinomialNB()
+    nb,kw=shake.train(good_titles,bad_titles,'title')
+
+    test_good_titles =  words[np.random.uniform(0,1000,size=(100,15)).astype(np.int)]
+    test_good_titles = [{'title':' '.join(g)} for g in test_good_titles]
+    test_bad_titles =  words[np.random.uniform(800,4000,size=(100,15)).astype(np.int)]
+    test_bad_titles = [{'title':' '.join(g)} for g in test_bad_titles]
+    screened = shake.filter_content(test_good_titles+test_bad_titles,'title',nb,kw)
+
+    new_good_titles =  words[np.random.uniform(5000,6000,size=(100,15)).astype(np.int)]
+    new_good_titles = [{'title':' '.join(g)} for g in new_good_titles]
+    new_bad_titles =  words[np.random.uniform(800,5200,size=(100,15)).astype(np.int)]
+    new_bad_titles = [{'title':' '.join(g)} for g in new_bad_titles]
+    rt_nb,rt_kw=shake.train(new_good_titles,new_bad_titles,'title',naive_bayes=nb,keywords=kw)
+    screened = shake.filter_content(test_good_titles+test_bad_titles,'title',rt_nb,rt_kw)
+
+    num_bad_inc = np.sum([s in test_bad_titles for s in screened])
+    num_good_inc= np.sum([s in test_good_titles for s in screened])
+
+    hk = skl.naive_bayes.MultinomialNB()
+    all_nb,all_kw=shake.train(good_titles+new_good_titles,bad_titles+new_bad_titles,'title')
+    screened = shake.filter_content(test_good_titles+test_bad_titles,'title',all_nb,all_kw)
+
+    num_bad_tot = np.sum([s in test_bad_titles for s in screened])
+    num_good_tot= np.sum([s in test_good_titles for s in screened])
+
+    assert(num_good_tot==num_good_inc)
+    assert(num_bad_tot==num_bad_inc)
+test_incremental_train.priority=1
+test_incremental_train.status="stable"
+test_incremental_train.slow=True
+
+if __name__=="__main__":
+    test_incremental_train()
