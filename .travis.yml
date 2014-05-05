@@ -8,7 +8,7 @@ virtualenv:
 install:
   - export SITE_PKG_DIR=$VIRTUAL_ENV/lib/python$TRAVIS_PYTHON_VERSION/site-packages
   - rm -f $VIRTUAL_ENV/lib/python$TRAVIS_PYTHON_VERSION/no-global-site-packages.txt
-  - apt-get install python-scipy python-numpy python-nose python-scikits-learn
+  - sudo apt-get install python-scipy python-numpy python-nose python-scikits-learn
   - pip install --user bibtexparser feedparser nose
   - python setup.py install --user
 
