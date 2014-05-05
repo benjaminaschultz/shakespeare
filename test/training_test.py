@@ -88,10 +88,15 @@ def test_incremental_train():
     all_nb,all_kw=shake.train(good_titles+new_good_titles,bad_titles+new_bad_titles,'title')
     all_screened = shake.filter_content(test_good_titles+test_bad_titles,'title',all_nb,all_kw)
 
+
+    #make sure both identified the small good sources
     good_check = np.all([s in all_screened for s in rt_screened])
+    assert(good_check)
+
+    #make sure no bad sources made it through
     bad_check =  not (np.any([s in test_bad_titles for s in rt_screened])
                        and np.any([s in test_bad_titles for s in all_screened]))
-
+    assert(bad_check)
 test_incremental_train.priority=1
 test_incremental_train.status="stable"
 test_incremental_train.slow=True
