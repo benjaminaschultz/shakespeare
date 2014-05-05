@@ -84,20 +84,22 @@ def load_knowledge(knowledge):
             print("Knowledge bust be a directory")
             exit()
 
-        kfiles = glob.glob(knowledge+'/*')
-        if not 'nb.p' in kfiles:
-            print("Knowledge does not contain nb.p (pickled naive bayes object)")
-            exit()
-        if not 'kw.p' in kfiles:
-            print("Knowledge does not contain kw.p (pickled keyword list)")
-            exit()
-
     else:
         knowledge =os.path.expanduser('~/.shakespeare')
+        #make this directory if it doesn't already exist
+        if not (os.path.exists(knowledge)):
+            print('Creating directory: {}'.format(knowledge))
+            os.mkdir(knowledge)
 
-    if os.path.exists(knowledge):
+    kfiles = glob.glob(knowledge+'/*')
+    if 'nb.p' in kfiles:
         nb=pickle.load(open(knowledge+'/nb.p'))
+    else:
+        print("Warning: knowledge dir {} does not contain nb.p (pickled naive bayes object)".format(knowledge))
+    if 'kw.p' in kfiles:
         kw=pickle.load(open(knowledge+'/kw.p'))
+    else:
+        print("Warning: knowledge dir {} does not contain kw.p (pickled keyword list)".format(knowledge))
 
     return(nb,kw, knowledge)
 
