@@ -10,7 +10,7 @@ from shakespeare import *
 parser = argparse.ArgumentParser()
 parser.add_argument('-o','--output', help='output file name. only supports markdown right now.',dest ='output',default=None)
 parser.add_argument('-b','--bibtex', help='bibtex files to fetch',dest='bibfiles', nargs='*',default=list())
-parser.add_argument('-j','--journals', help='journals to fetch. Currently supports {}.'.format(' '.join(rss.rss_feeds.keys())),
+parser.add_argument('-j','--journals', help='journals to fetch. Currently supports {}.'.format(', '.join(rss.rss_feeds.keys())),
                     nargs='*',dest='journals',default=list())
 parser.add_argument('-a','--arXiv', help='arXiv categories to fetch',
                   nargs='*',dest='arXiv',default=list())
