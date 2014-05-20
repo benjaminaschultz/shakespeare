@@ -78,6 +78,10 @@ else:
 
     #load the old knowledge
     nb,kw,knowledge = load_knowledge(args.knowledge)
+    if nb is None:
+        print('Could not locate a naive_bayes object with which to filter papers. You can create one easily by training against some bib files, e.g. "shakespeare --train -g good.bib -b bad.bib"')
+        exit(0)
+
     if args.all_sources:
         sources = [arxiv.ArXiv(cat) for cat in arxiv.arxiv_cats] + \
                   [rss.JournalFeed(journal) for journal in rss.rss_feeds.keys()]

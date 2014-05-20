@@ -92,12 +92,13 @@ def load_knowledge(knowledge):
             os.mkdir(knowledge)
 
     kfiles = glob.glob(knowledge+'/*')
-    if 'nb.p' in kfiles:
-        nb=pickle.load(open(knowledge+'/nb.p'))
+    if os.path.join(knowledge,'nb.p') in kfiles:
+        nb=pickle.load(open(os.path.join(knowledge,'nb.p')))
     else:
         print("Warning: knowledge dir {} does not contain nb.p (pickled naive bayes object)".format(knowledge))
-    if 'kw.p' in kfiles:
-        kw=pickle.load(open(knowledge+'/kw.p'))
+
+    if os.path.join(knowledge,'kw.p') in kfiles:
+        kw=pickle.load(open(os.path.join(knowledge,'kw.p')))
     else:
         print("Warning: knowledge dir {} does not contain kw.p (pickled keyword list)".format(knowledge))
 
