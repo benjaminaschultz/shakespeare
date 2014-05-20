@@ -8,7 +8,7 @@ Installation
 run:
 
 ```
-python setup.py --user install
+python setup.py install --user
 ```
 
 to install shakespeare in ~/.local.
